@@ -1,8 +1,7 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-// Local development uses /. GitHub Actions passes the Pages path with --base.
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
-})
+  plugins: [react()],
+  base: process.env.GITHUB_PAGES === 'true' ? '/my-golf-calendar/' : '/',
+});
