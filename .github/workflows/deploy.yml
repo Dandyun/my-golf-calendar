@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Deploy My Golf Calendar (No npm)
 
 on:
   push:
@@ -11,31 +11,30 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: github-pages
   cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - name: Checkout files
+        uses: actions/checkout@v4
+      - name: Verify website files
+        run: |
+          test -s site/index.html
+          test -s site/app.js
+          test -s site/courses.js
+          test -s site/styles.css
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload static website
+        uses: actions/upload-pages-artifact@v3
         with:
-          node-version-file: .nvmrc
-          cache: npm
-      - uses: actions/configure-pages@v6
-        id: pages
-      - run: npm install --no-audit --no-fund
-      - run: npm run lint
-      - run: npm run build -- --base="$PAGES_BASE_PATH/"
-        env:
-          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: dist
-      - uses: actions/deploy-pages@v5
+          path: site
+      - name: Publish website
         id: deployment
+        uses: actions/deploy-pages@v4
