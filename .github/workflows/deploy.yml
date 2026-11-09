@@ -1,4 +1,4 @@
-name: Deploy My Golf Calendar (No npm)
+name: Deploy My Golf Calendar (Static + GolfCourseAPI)
 
 on:
   push:
@@ -21,7 +21,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout files
+      - name: Check out files
         uses: actions/checkout@v4
       - name: Verify website files
         run: |
@@ -29,6 +29,11 @@ jobs:
           test -s site/app.js
           test -s site/courses.js
           test -s site/styles.css
+          test -s scripts/update_golfcourseapi.py
+      - name: Prepare public course scorecard cache (API key stays private)
+        env:
+          GOLFCOURSEAPI_KEY: ${{ secrets.GOLFCOURSEAPI_KEY }}
+        run: python3 scripts/update_golfcourseapi.py
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload static website
