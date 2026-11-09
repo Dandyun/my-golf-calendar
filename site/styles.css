@@ -84,3 +84,23 @@ input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and
 .tee-chip.active{background:var(--green);color:#fff;border-color:var(--green)}
 .tee-explainer{font-size:13px;line-height:1.5;color:var(--sub);margin:12px 0 0}
 @media(max-width:350px){.form-content,.preview-content,.details-content{padding-left:15px;padding-right:15px}.map-top{left:10px;right:10px}.day{padding:7px 2px}.time-row{grid-template-columns:69px 10px minmax(0,1fr);column-gap:8px}}
+
+/* v4: OSM map tiles with visible geographic fallback in restrictive browsers */
+.map-canvas{background:#e5eee6}
+.map-fallback-grid{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+ background:repeating-linear-gradient(90deg,transparent 0,transparent 77px,#cbdccf 78px,#cbdccf 79px,transparent 80px),
+ repeating-linear-gradient(0deg,transparent 0,transparent 77px,#cbdccf 78px,#cbdccf 79px,transparent 80px),
+ linear-gradient(145deg,#eff7ef,#d5e6dc)}
+.map-grid-head{position:absolute;left:24px;top:240px;letter-spacing:.16em;font-size:11px;font-weight:700;color:#7eaa8c}
+.map-grid-sub{position:absolute;left:24px;top:265px;font-size:11px;color:#749985;max-width:215px}
+.map-geo-labels{position:absolute;inset:0;z-index:0;pointer-events:none}
+.map-geo-city{position:absolute;transform:translate(-50%,-50%);font-weight:600;font-size:12px;letter-spacing:.1em;color:#749781;white-space:nowrap;opacity:.72}
+.map-canvas.map-tiles-ready .map-fallback-grid,.map-canvas.map-tiles-ready .map-geo-labels{display:none}
+.map-fallback-alert{display:none;position:absolute;top:206px;left:14px;right:70px;z-index:9;
+ background:rgba(255,255,255,.95);border:1px solid #b7cebd;color:#355e40;font-size:12px;line-height:1.35;
+ border-radius:10px;padding:8px 12px;box-shadow:0 3px 15px #204a3020;max-width:310px}
+.map-fallback-alert a{display:inline-block;color:#165b38;font-weight:650;text-decoration:underline}
+.map-tiles-unavailable:not(.map-tiles-ready) .map-fallback-alert{display:block}
+.map-tile-layer{z-index:1}.map-radius-svg{z-index:2}.map-pin-layer{z-index:6}
+/* Keep the last reachable tiles visible and do not let tiles obscure pins */
+.map-canvas .map-tile{background:transparent}
