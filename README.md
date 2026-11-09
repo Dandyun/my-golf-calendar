@@ -65,3 +65,12 @@ The `vite.config.ts` contains the GitHub Pages subfolder path. If you rename the
 ## Data note
 
 All planning data is **per-browser**, not shared across devices. Private/incognito tabs or clearing site data may delete plans. Treat the prototype as a planning helper and confirm current course access, prices, facilities, published scorecards and tee-time availability with course operators.
+
+
+## GitHub Pages troubleshooting
+
+1. In the repository, open **Settings → Pages** and set **Source** to **GitHub Actions**.
+2. Upload the *contents* of this `my-golf-calendar` folder to your repository root (including `src/` and `.github/workflows/deploy.yml`). Do not nest the folder inside itself.
+3. Open **Actions → Deploy to GitHub Pages**. A successful run needs both a `build` and a `deploy` job.
+4. If a run fails, click the failed **job**, expand the first failed step, and read the error immediately above `Process completed with exit code 1`.
+5. This ZIP intentionally does not include `node_modules/` or `package-lock.json`. The workflow installs dependencies using `npm install` before building.
