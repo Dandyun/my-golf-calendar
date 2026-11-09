@@ -47,7 +47,7 @@
     plans:initialPlans(), viewingId:null, suggested:false, toast:'',
     draft:null
   };
-  let map=null, mapLayer=null, mapRing=null, toastHandle=null;
+  let map=null, toastHandle=null;
   const currentOrigin = () => ORIGINS[s.originIndex] || {name:'Jersey City, NJ',lat:40.7282,lng:-74.0776};
   const currentCourse = () => COURSES.find(c=>c.id===s.courseId)||COURSES[0];
   const findCourse = id => COURSES.find(c=>c.id===id);
@@ -97,28 +97,135 @@
   function preview(){const p=s.draft,c=findCourse(p.courseId);return `${topbar('Edit timing')}<section class="preview-content"><h1>${esc(c.name)}<br>planned.</h1><p class="date-subtitle">${dateLabel(p.date)}</p><div class="arrival-summary"><h3>Arrive at ${prettyTime(steps(p)[1].time)}</h3><p>Check-in and warm-up included before your target tee time.</p></div>${timeline(p)}<p class="disclaimer">This saves your plan, not a reservation. Range access, tee-time availability and travel estimates are not confirmed.</p>${btn('Save to My Golf Calendar','savePlan')}</section>`;}
   function savedPlan(){const p=s.plans.find(x=>x.id===s.viewingId);if(!p){s.screen='home';return home();}const c=findCourse(p.courseId)||COURSES[0];return `${topbar('My Golf Calendar')}<section class="saved-content"><div class="saved-heading"><div><h1>${esc(c.name)}</h1><h2>${dateLabel(p.date,{weekday:'short',month:'short',day:'numeric',year:'numeric'})}</h2></div><button data-act="invite" class="btn outline invite">${icon('share',16)} Invite</button></div>${photo(c)}${timeline(p)}<div class="saved-actions">${btn('Use as new plan','duplicatePlan',true)}<button data-act="deletePlan" class="danger-button">${icon('trash',17)} Delete saved plan</button></div><p class="notice">This is an itinerary only. It does not book a tee time.</p></section>`;}
   function profile(){return `${topbar('Plans')}<section class="profile-content"><div class="profile-icon">${icon('profile',34)}</div><h1>My Golf Calendar</h1><p class="muted">Plan golf days, not reservations.</p><div class="profile-summary">${icon('calendar',22)}<div><b>${s.plans.length} saved plans</b><small>Stored in this browser only</small></div></div><div class="profile-summary">${icon('pin',22)}<div><b>${esc(currentOrigin().name)}</b><small>Sample starting location</small></div></div><h2>Your saved plans</h2>${s.plans.length?s.plans.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(p=>`<button class="profile-plan" data-act="viewPlan:${p.id}">${dateLabel(p.date,{month:'short',day:'numeric',year:'numeric'})} · ${esc(findCourse(p.courseId)?.shortName||'Golf')} ${icon('next',17)}</button>`).join(''):'<p class="muted">No saved plans yet.</p>'}<p class="notice">No account or database. Plans are lost if this browser’s site data is cleared. Map tiles require internet.</p>${btn('Create a new plan','map')}</section>`;}
-  function render(){if(map){map.remove();map=null;mapLayer=null;mapRing=null;}
+  function render(){if(map){map.destroy();map=null;}
     let content='';switch(s.screen){case 'home':content=home();break;case 'map':content=mapScreen();break;case 'course':content=courseScreen();break;case 'timing':content=timing();break;case 'preview':content=preview();break;case 'plan':content=savedPlan();break;case 'profile':content=profile();break;default:content=home();}
     ROOT.innerHTML=`<div class="app-shell ${s.screen==='map'?'full-map':''}">${content}<div id="toast" class="toast ${s.toast?'show':''}" role="status">${esc(s.toast)}</div></div>`;
     if(s.screen==='map'){setTimeout(initMap,30);}
   }
-  function initMap(){const target=document.getElementById('map');if(!target)return;if(!window.L){target.innerHTML='<div class="map-loading"><p>Map connection unavailable.</p><p>Use “Matching courses” below to explore all courses.</p></div>';return;}
-    const origin=currentOrigin();try {
-      target.innerHTML='';
-      map=L.map(target,{zoomControl:false,scrollWheelZoom:false}).setView([origin.lat,origin.lng],10);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap contributors',maxZoom:19}).addTo(map);
-      L.control.zoom({position:'bottomright'}).addTo(map);
-      mapRing=L.circle([origin.lat,origin.lng],{radius:s.filters.radius*1609.344,color:'#285e41',weight:1.5,fillColor:'#5e836b',fillOpacity:0.07,opacity:0.45}).addTo(map);
-      mapLayer=L.layerGroup().addTo(map);
-      L.circleMarker([origin.lat,origin.lng],{radius:8,weight:3,color:'#fff',fillColor:'#285e41',fillOpacity:1}).addTo(mapLayer).bindTooltip('Starting location');
-      filtered().forEach(c=>{const node=document.createElement('div');node.className='pin-label';
-        const strong=document.createElement('strong');strong.textContent=c.shortName;
-        const sub=document.createElement('span');sub.textContent=`${c.price}  ${c.rating===null?'—':'★ '+c.rating.toFixed(1)}`;
-        node.append(strong,sub);const wrap=document.createElement('div');wrap.append(node);
-        const v=L.divIcon({html:wrap.innerHTML,className:'pin-wrapper',iconSize:[140,56],iconAnchor:[70,56]});
-        L.marker([c.lat,c.lng],{icon:v,title:c.name}).addTo(mapLayer).on('click',()=>{s.courseId=c.id;s.detailTab='info';navigate('course')});
-      });setTimeout(()=>{if(map)map.invalidateSize()},200);
-    }catch(e){console.error('Map initialization issue',e);target.innerHTML='<div class="map-loading">Map could not load. Open the course list below.</div>';}}
+  // Dependency-free slippy map: OpenStreetMap tiles + our own coordinate-accurate markers.
+  // It keeps course markers visible even if third-party map tile requests fail.
+  function initMap() {
+    const target=document.getElementById('map');
+    if(!target)return;
+    target.innerHTML='';
+    target.setAttribute('role','application');
+    target.setAttribute('aria-label','Interactive map: drag to pan, use plus and minus to zoom, select a golf course');
+    const tiles=document.createElement('div');tiles.className='map-tile-layer';
+    const radius=document.createElement('div');radius.className='map-radius-ring';
+    const pins=document.createElement('div');pins.className='map-pin-layer';
+    const controls=document.createElement('div');controls.className='map-zoom-controls';
+    controls.innerHTML='<button type="button" aria-label="Zoom in" data-mapzoom="1">+</button><button type="button" aria-label="Zoom out" data-mapzoom="-1">−</button><button type="button" aria-label="Center map on courses" data-mapzoom="fit" title="Show all courses">⌖</button>';
+    const attribution=document.createElement('div');attribution.className='map-attribution';
+    attribution.innerHTML='Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>';
+    target.append(tiles,radius,pins,controls,attribution);
+
+    const size=256;
+    const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
+    const project=(lat,lng,z)=>{
+      const l=clamp(lat,-85.0511,85.0511)*Math.PI/180;
+      const world=size*Math.pow(2,z);
+      return {x:(lng+180)/360*world,y:(1-Math.asinh(Math.tan(l))/Math.PI)/2*world};
+    };
+    const unproject=(x,y,z)=>{
+      const world=size*Math.pow(2,z);
+      return {lat:Math.atan(Math.sinh(Math.PI*(1-2*y/world)))*180/Math.PI,lng:x/world*360-180};
+    };
+    const origin=currentOrigin(), visible=filtered();
+    let z=10, center={lat:origin.lat,lng:origin.lng};
+    let points=new Map(), activePointer=null, lastX=0, lastY=0, animation=0, isDragging=false;
+    const tileImages=new Map();
+
+    function fitCourses(){
+      const places=[origin,...visible];
+      if(places.length===1){z=11;center={lat:origin.lat,lng:origin.lng};return;}
+      const minLat=Math.min(...places.map(p=>p.lat)),maxLat=Math.max(...places.map(p=>p.lat));
+      const minLng=Math.min(...places.map(p=>p.lng)),maxLng=Math.max(...places.map(p=>p.lng));
+      center={lat:(minLat+maxLat)/2,lng:(minLng+maxLng)/2};
+      const w=target.clientWidth||390,h=target.clientHeight||740;
+      const usableW=Math.max(150,w-105),usableH=Math.max(160,h-340);
+      for(z=12;z>7;z--){const a=project(maxLat,minLng,z),b=project(minLat,maxLng,z);if((b.x-a.x)<=usableW&&(b.y-a.y)<=usableH)break;}
+    }
+    fitCourses();
+
+    function paint(){
+      animation=0;
+      if(!target.isConnected)return;
+      const w=target.clientWidth,h=target.clientHeight;
+      if(!w||!h)return;
+      const cp=project(center.lat,center.lng,z),offsetX=w/2-cp.x,offsetY=h/2-cp.y;
+      const worldTiles=Math.pow(2,z), minX=Math.floor(-offsetX/size)-1, maxX=Math.ceil((w-offsetX)/size)+1;
+      const minY=Math.max(0,Math.floor(-offsetY/size)-1), maxY=Math.min(worldTiles-1,Math.ceil((h-offsetY)/size)+1);
+      const valid=new Set();
+      for(let x=minX;x<=maxX;x++){
+        for(let y=minY;y<=maxY;y++){
+          const normalizedX=((x%worldTiles)+worldTiles)%worldTiles;
+          const key=`${z}/${normalizedX}/${y}`;
+          valid.add(key);
+          let img=tileImages.get(key);
+          if(!img){img=document.createElement('img');img.className='map-tile';img.alt='';img.decoding='async';img.loading='eager';img.src=`https://tile.openstreetmap.org/${key}.png`;img.onerror=()=>{img.style.visibility='hidden'};tileImages.set(key,img);tiles.appendChild(img);}
+          img.style.left=`${Math.round(x*size+offsetX)}px`;
+          img.style.top=`${Math.round(y*size+offsetY)}px`;
+        }
+      }
+      for(const [k,img] of tileImages){if(!valid.has(k)){img.remove();tileImages.delete(k);}}
+      const current=project(origin.lat,origin.lng,z), rx=current.x+offsetX,ry=current.y+offsetY;
+      const metersPerPixel=156543.03392*Math.cos(origin.lat*Math.PI/180)/Math.pow(2,z);
+      const circleRadius=Math.min(5000,s.filters.radius*1609.344/metersPerPixel);
+      radius.style.width=`${2*circleRadius}px`;radius.style.height=`${2*circleRadius}px`;
+      radius.style.left=`${rx-circleRadius}px`;radius.style.top=`${ry-circleRadius}px`;
+
+      const currentIds=new Set(visible.map(c=>c.id));
+      for(const [id,node] of points){if(!currentIds.has(id)){node.remove();points.delete(id);}}
+      for(const c of visible){
+        let node=points.get(c.id);
+        if(!node){
+          node=document.createElement('button');node.type='button';node.className='map-course-pin';node.dataset.act=`course:${c.id}`;
+          node.setAttribute('aria-label',`${c.name}, ${c.price}, ${c.rating===null?'rating unavailable':'rated '+c.rating.toFixed(1)}`);
+          const rating=c.rating===null?'Unrated':'★ '+c.rating.toFixed(1);
+          node.innerHTML=`<strong>${esc(c.shortName)}</strong><span>${esc(c.price)} &nbsp; <b>${esc(rating)}</b></span>`;
+          pins.appendChild(node);points.set(c.id,node);
+        }
+        const pos=project(c.lat,c.lng,z);
+        node.style.left=`${pos.x+offsetX}px`;
+        node.style.top=`${pos.y+offsetY}px`;
+        const onscreen=pos.x+offsetX > -120 && pos.x+offsetX < w+120 && pos.y+offsetY > -100 && pos.y+offsetY < h+100;
+        node.style.display=onscreen?'block':'none';
+      }
+      let originNode=pins.querySelector('.map-origin-dot');
+      if(!originNode){originNode=document.createElement('div');originNode.className='map-origin-dot';originNode.title='Your starting location';pins.appendChild(originNode);}
+      originNode.style.left=`${rx}px`;originNode.style.top=`${ry}px`;
+    }
+    function schedule(){if(!animation)animation=requestAnimationFrame(paint);}
+    function zoom(delta){z=clamp(z+delta,7,14);schedule();}
+    controls.addEventListener('click',e=>{
+      const b=e.target.closest('[data-mapzoom]');if(!b)return;
+      e.stopPropagation();
+      if(b.dataset.mapzoom==='fit')fitCourses();else zoom(Number(b.dataset.mapzoom));
+      schedule();
+    });
+    // Pointer-based dragging works for mouse and touch, and does not interfere with marker taps.
+    function pointerDown(e){
+      if(e.target.closest('button,a,.map-attribution'))return;
+      activePointer=e.pointerId;lastX=e.clientX;lastY=e.clientY;isDragging=false;
+      try{target.setPointerCapture(e.pointerId)}catch{}
+    }
+    function pointerMove(e){
+      if(e.pointerId!==activePointer)return;
+      const dx=e.clientX-lastX,dy=e.clientY-lastY;
+      if(dx*dx+dy*dy>0){isDragging=true;const cp=project(center.lat,center.lng,z);center=unproject(cp.x-dx,cp.y-dy,z);schedule();}
+      lastX=e.clientX;lastY=e.clientY;
+    }
+    function pointerUp(e){if(e.pointerId!==activePointer)return;activePointer=null;}
+    function onWheel(e){e.preventDefault();zoom(e.deltaY<0?1:-1);}
+    target.addEventListener('pointerdown',pointerDown);
+    target.addEventListener('pointermove',pointerMove);
+    target.addEventListener('pointerup',pointerUp);
+    target.addEventListener('pointercancel',pointerUp);
+    target.addEventListener('wheel',onWheel,{passive:false});
+    const onResize=()=>schedule();window.addEventListener('resize',onResize);
+    map={destroy(){cancelAnimationFrame(animation);window.removeEventListener('resize',onResize);tileImages.clear();points.clear();}};
+    paint();
+  }
   function handle(act){if(!act)return;
     if(act==='home'||act==='profile'||act==='map'||act==='preview'){navigate(act);return;}
     if(act==='back'){navigate(s.screen==='course'?'map':s.screen==='timing'?'course':s.screen==='preview'?'timing':'home');return;}
@@ -144,6 +251,5 @@
   }
   ROOT.addEventListener('click',ev=>{const el=ev.target.closest('[data-act]');if(el){ev.preventDefault();handle(el.dataset.act);}});
   ROOT.addEventListener('change',ev=>{const el=ev.target;if(el.dataset.draft&&s.draft){const key=el.dataset.draft;s.draft[key]=['drive','checkIn','warmUp','firstTee'].includes(key)?Number(el.value):el.value;render();return;}if(el.dataset.field==='origin'){s.originIndex=Number(el.value);render();return;}if(el.dataset.field==='radius'||el.dataset.field==='minRating'){s.filters[el.dataset.field]=Number(el.value);render();return;}if(el.dataset.field==='facility'){s.filters.facility=el.value;render();return;}});
-  window.addEventListener('leaflet-ready',()=>{if(s.screen==='map'&&!map)initMap();});
   render();
 })();
