@@ -1,0 +1,20 @@
+MY GOLF CALENDAR - GitHub Pages 배포 오류 해결용 ZIP
+
+이 ZIP은 기존 React/Vite 배포에서 발생한 npm 충돌을 피하는 정적 웹앱 버전입니다.
+
+업로드 순서:
+1. 이 ZIP 압축을 풉니다.
+2. https://github.com/Dandyun/my-golf-calendar 에 접속합니다.
+3. ZIP 안의 site 폴더와 .github 폴더를 GitHub Repository의 최상위에 업로드합니다.
+   - .github 폴더는 숨김 폴더입니다. macOS Finder에서 Command + Shift + . 키로 보이게 할 수 있습니다.
+   - 기존 .github/workflows/deploy.yml은 새 파일로 교체해야 합니다.
+   - 기존 package.json, package-lock.json, src 폴더는 지우지 않아도 됩니다.
+4. Commit changes를 눌러 저장합니다.
+5. Settings -> Pages -> Build and deployment -> Source -> GitHub Actions 확인
+6. Actions -> Deploy My Golf Calendar (No npm) 가 초록색 성공인지 확인
+7. 성공 후 https://dandyun.github.io/my-golf-calendar/ 접속
+
+이 배포 파일은 npm install / npm ci / npm run build를 실행하지 않습니다.
+7개 골프장 데이터는 정적 참고자료이며, 실시간 예약이나 실시간 요금을 표시하지 않습니다.
+저장 일정은 해당 기기의 브라우저 localStorage에 보관됩니다.
+실제 지도 타일과 Leaflet은 인터넷이 필요합니다.
