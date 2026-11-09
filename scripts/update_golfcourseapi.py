@@ -2,7 +2,7 @@
 """Build a static, public-safe GolfCourseAPI cache during GitHub Actions deploy.
 
 Auth never enters the published site. Uses only standard-library Python.
-Free tier: intentionally <= 14 requests per normal build (7 searches + 7 details).
+Free tier: at most 20 requests per normal build (10 searches + 10 details).
 """
 from __future__ import annotations
 import datetime as dt
@@ -138,7 +138,7 @@ def run():
     bundled=json.loads(raw.removeprefix('window.COURSE_DATA =').rstrip('; \n'))['courses']
     payload={'updatedAt':dt.datetime.now(dt.timezone.utc).date().isoformat(),'courses':{}}
     errors=[]
-    for course in bundled[:7]:
+    for course in bundled[:10]:
         try:
             term=' '.join(words(course['name'])) or course['name']
             result=api_get('/search',{'search_query':term})
