@@ -238,3 +238,106 @@ html,body,#app{min-height:100%;width:100%}
 .month-grid-v5 .month-square.today{background:#285e41;color:#fff}
 .month-grid-v5 .month-square.today span{color:#e4f2e8}
 .month-grid-v5 .month-square.today i{background:#fff}
+
+
+/* =====================================================================
+   NOV 2026 NAVIGATION PATCH
+   Fixed tab bar: always visible on Calendar, Week, Search and Profile,
+   including long course search results. No overlay on the full-screen map.
+   ===================================================================== */
+.app-shell:not(.full-map) > .bottom-nav-v5 {
+  position: fixed;
+  left: 50%;
+  right: auto;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: min(100%, 440px);
+  max-width: 440px;
+  z-index: 1100;
+  border-top: 1px solid #d7e1d8;
+  background: #fff;
+  box-shadow: 0 -3px 18px rgba(24, 60, 34, .045);
+}
+/* Keep the three icons centered and their tap targets comfortably sized. */
+.app-shell:not(.full-map) > .bottom-nav-v5 button {
+  min-height: 60px;
+  -webkit-tap-highlight-color: transparent;
+}
+/* Explicit scrolling room so last search result never hides under the bar. */
+.app-shell:not(.full-map) > .search-page {
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+}
+.app-shell:not(.full-map) > .home-content.week-page {
+  padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+}
+/* Move the empty state toward the suggestion instead of leaving a large gap. */
+.week-page .empty-state { padding-top: 23px; padding-bottom: 12px; }
+.week-page .empty-state h2 { margin-bottom: 12px; }
+/* Map has its own bottom bar, which must remain inside the map overlay. */
+.app-shell.full-map .map-bottom-nav-v5 .bottom-nav-v5 {
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  transform: none;
+  width: 100%;
+  box-shadow: none;
+}
+
+/* Your saved plans: below the monthly calendar, above the fixed tab bar. */
+.month-home .home-saved-plans {
+  margin-top: 39px;
+  padding: 0 10px 12px;
+  color: var(--ink);
+}
+.month-home .home-saved-plans h2 {
+  margin: 0 0 11px;
+  font-size: 20px;
+  line-height: 1.35;
+  font-weight: 550;
+  letter-spacing: -.015em;
+}
+.month-home .home-saved-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 51px;
+  padding: 11px 2px 11px 0;
+  border: 0;
+  border-bottom: 1px solid #e7ede7;
+  background: transparent;
+  color: #42664e;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+}
+.month-home .home-saved-row > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.month-home .home-saved-row .home-saved-chevron {
+  display: grid;
+  place-items: center;
+  flex: 0 0 20px;
+  color: #315d43;
+}
+.month-home .home-saved-row:focus-visible {
+  outline: 2px solid #285e41;
+  outline-offset: 2px;
+  border-radius: 5px;
+}
+.month-home .home-saved-empty {
+  margin: 0;
+  padding: 7px 0;
+  color: #879989;
+  font-size: 14px;
+}
+/* Nav remains fixed; scrollable main content never sits underneath it. */
+.app-shell:not(.full-map) > .home-content.month-home {
+  padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+}
