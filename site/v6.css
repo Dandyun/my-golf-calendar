@@ -1,0 +1,60 @@
+/* Only the seven November 19 design changes. Keep existing site/styles.css unchanged. */
+
+/* Calendar: saved plans above monthly date tiles, capped at two and a faded peek. */
+.month-home .home-saved-plans.saved-plans-above{margin:2px 0 29px;padding:0 4px}
+.saved-plans-heading{display:flex;align-items:center;justify-content:space-between;width:100%;background:transparent;border:0;color:var(--ink);padding:0 1px 5px;text-align:left}
+.saved-plans-heading h2{margin:0;font-size:19px;font-weight:550}
+.saved-plans-heading .saved-plans-arrow{display:grid;place-items:center;transform:rotate(90deg);color:var(--green)}
+.saved-plans-above .home-saved-row{min-height:47px}
+.saved-plans-peek{height:24px;overflow:hidden;opacity:.44;-webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent);pointer-events:none}
+.saved-plans-peek .home-saved-row{height:48px}
+.all-saved-page .all-saved-list{margin:22px 5px 0}
+.all-saved-page .home-saved-row{display:flex;width:100%;min-height:54px;border:0;border-bottom:1px solid #e5ebe6;background:white;text-align:left;align-items:center;justify-content:space-between;color:#365a43;font-size:15px}
+.all-saved-page .home-saved-empty{padding:16px 0;color:#819285}
+
+/* Suggestion is one stroked card, not a filled orange block. */
+.week-page .first-suggestion{border:0;margin-top:28px;padding-top:0}
+.week-page .first-suggestion .plan-card.suggested{background:#fff!important;border:2px solid #f6a15a!important;box-shadow:none}
+.week-page .first-suggestion .plan-card.suggested p{color:var(--sub)}
+.week-page .empty-state{padding-top:16px}
+
+/* Search: thumbnail save control and saved-only filter. */
+.search-page .course-results-title{gap:10px}
+.search-course-card{display:block}
+.search-course-photo-action{display:block;width:100%;height:100%;border:0;padding:0;background:transparent;text-align:left;overflow:hidden}
+.search-course-photo-action .course-img{width:100%;height:100%;object-fit:cover;display:block}
+.search-course-row-action{display:block;width:100%;border:0;background:transparent;color:inherit;text-align:left;padding:0}
+.course-save-button{position:absolute;z-index:6;right:11px;top:11px;display:flex;align-items:center;gap:5px;border:1px solid #d2e1d2;border-radius:9px;background:#fffffff0;color:#285e41;padding:8px 10px;box-shadow:0 2px 12px #00000018;font-weight:550;font-size:13px}
+.course-save-button.saved{background:#285e41;color:white;border-color:#285e41}
+.saved-course-filter{display:inline-flex;align-items:center;gap:5px;padding:7px 11px;border-radius:9px;border:1px solid #b6d0bd;background:white;color:#355b42;font-size:13px;font-weight:500;white-space:nowrap}
+.saved-course-filter.active{background:#285e41;color:white}
+
+/* Map: back arrow to Search Course and shorter location bar. */
+.map-header-row{display:flex;align-items:center;gap:9px;min-width:0}
+.map-back-search{width:43px;height:43px;border:1px solid #d6ded7;border-radius:10px;background:white;display:grid;place-items:center;color:#244d34;flex:0 0 43px;box-shadow:0 2px 8px #0000000e}
+.map-header-row .map-location{flex:1;min-width:0;width:auto}
+.map-header-row .map-location select{min-width:0;font-size:13px}
+
+/* Map tap: show the same full-screen detail content immediately. */
+.map-course-sheet.full-course-sheet,.map-course-sheet.full-course-sheet.expanded{position:absolute;inset:0;width:100%;height:100%;max-height:100dvh;border-radius:0!important;box-shadow:none;padding-bottom:env(safe-area-inset-bottom,0px);z-index:990}
+.map-course-full-top{padding:24px 21px 14px;background:#fff;border-bottom:1px solid #e6ebe7;flex-shrink:0}
+.map-course-full-top .back-button{font-size:14px;color:#55735f}
+.full-course-sheet .map-sheet-inner{padding:0 21px 34px;overflow-y:auto;flex:1;min-height:0}
+.full-course-sheet .map-course-full-heading{padding:15px 0 15px}
+.full-course-sheet .map-course-full-heading h1{font-size:26px;font-weight:550;line-height:1.15;margin:0 0 9px}
+.full-course-sheet .course-photo.photo-v5{margin-left:-21px;margin-right:-21px;height:205px}
+.full-course-sheet .map-sheet-inner .course-buttons{margin:15px 0}
+.full-course-sheet .map-sheet-inner .course-tabs{margin-bottom:14px}
+
+/* Driving time: two editable numeric fields, responsive to phone width. */
+.form-content .drive-duration-input{display:flex;gap:11px;width:100%;min-width:0;margin:7px 0}
+.form-content .drive-duration-input label{min-width:0;flex:1;border:1px solid #cbd9cd;border-radius:9px;display:flex;align-items:center;padding:0 10px;height:49px;gap:8px;background:white}
+.form-content .drive-duration-input input{display:block;min-width:0;width:100%;border:0;background:transparent;outline:0;color:var(--ink);font:inherit;font-size:17px;font-variant-numeric:tabular-nums}
+.form-content .drive-duration-input label span{color:#657e6b;font-size:13px}
+.form-content .warm-mode-field{margin:17px 0;border:0;padding:0;min-width:0}
+.form-content .warm-mode-field legend{color:var(--ink);font-size:14px;margin-bottom:10px}
+.form-content .warm-mode-buttons{display:flex;gap:7px;flex-wrap:wrap}
+.form-content .warm-mode-button{border:1px solid #bdcfbf;border-radius:9px;background:white;color:#375a43;min-height:43px;flex:1 1 auto;padding:8px 10px;font-size:13px;white-space:nowrap}
+.form-content .warm-mode-button.active{background:#285e41;color:white;border-color:#285e41}
+.form-content .warm-mode-field small{display:block;color:#819184;font-size:12px;margin-top:9px;line-height:1.45}
+@media(max-width:365px){.form-content .warm-mode-button{font-size:12px;padding:7px 7px}.map-course-full-top{padding-top:14px}}
