@@ -143,11 +143,74 @@ def update_app(src):
     return src
 
 
+# Added edit-in-place support on top of the earlier seven UI changes.
+# Only targets the saved plan actions, the preview save label, and navigation.
+EDIT_PLAN_VERSION='/* golf-p7: edit-existing-plan-only */'
+
+
+def update_saved_plan_edit(src):
+    if EDIT_PLAN_VERSION in src:
+        return src
+    # Keep the user's existing courseBody(), course previews, photos and CSS untouched.
+    src=replace_once(src, "btn('Use as new plan','duplicatePlan',true)", "btn('Edit plan','editPlan',true)")
+    src=replace_once(src, "btn('Save to My Golf Calendar','savePlan')",
+        "btn(s.draft?.id?'Save changes':'Save to My Golf Calendar','savePlan')")
+    # Back from the edit form returns to the existing itinerary.
+    src=replace_once(src,
+        "else if(s.screen==='timing')navigate(s.timingBack==='map'?'map':'course');",
+        "else if(s.screen==='timing')navigate(s.draft?.id?'plan':s.timingBack==='map'?'map':'course');")
+    src=replace_between(src,
+        "    if(act==='savePlan'){",
+        "    if(act.startsWith('viewPlan:'))",
+        r'''    if(act==='savePlan'){
+      if(!s.draft?.date||!s.draft?.tee){showToast('Select a date and tee time.');return;}
+      // Keep the original ID while editing. Do not create a second plan.
+      if(s.draft.id){
+        const i=s.plans.findIndex(plan=>plan.id===s.draft.id);
+        if(i<0){showToast('Saved plan no longer exists.');navigate('week');return;}
+        const original=s.plans[i];
+        const updated={...s.draft,id:original.id,createdAt:original.createdAt,updatedAt:Date.now()};
+        s.plans[i]=updated;
+        persist();
+        s.viewingId=updated.id;
+        s.selectedDate=updated.date;
+        s.calendarYear=parseDay(updated.date).getFullYear();
+        s.calendarMonth=parseDay(updated.date).getMonth();
+        navigate('plan');
+        showToast('Plan updated');
+        return;
+      }
+      const p={...s.draft,id:`${Date.now()}-${Math.random().toString(36).slice(2,8)}`,createdAt:Date.now()};
+      s.plans.push(p);
+      persist();
+      s.selectedDate=p.date;
+      s.calendarYear=parseDay(p.date).getFullYear();
+      s.calendarMonth=parseDay(p.date).getMonth();
+      navigate('week');
+      showToast('Plan saved');
+      return;
+    }''')
+    src=replace_between(src,
+        "    if(act==='duplicatePlan'){",
+        "    if(act==='suggestionPlan'){",
+        r'''    if(act==='editPlan'){
+      const p=s.plans.find(x=>x.id===s.viewingId);
+      if(!p){showToast('Saved plan not found.');return;}
+      // Copy fields for editing; only Save changes updates localStorage.
+      s.draft={...p};
+      s.courseId=p.courseId;
+      s.timingBack='plan';
+      navigate('timing');
+      return;
+    }''')
+    return EDIT_PLAN_VERSION+'\n'+src
+
+
 def main():
     if not APP.is_file() or not HTML.is_file():
         sys.exit('Missing site/app.js or site/index.html')
     original=APP.read_text(encoding='utf-8')
-    try: patched=update_app(original)
+    try: patched=update_saved_plan_edit(update_app(original))
     except ValueError as exc:sys.exit('Safe patch aborted without altering any files: '+str(exc))
     page=HTML.read_text(encoding='utf-8')
     if './v6.css' not in page:
@@ -156,6 +219,6 @@ def main():
     if not (ROOT/'site'/'v6.css').is_file():sys.exit('Missing site/v6.css; no files changed')
     APP.write_text(patched,encoding='utf-8')
     HTML.write_text(page,encoding='utf-8')
-    print('Applied v6 UI changes. Course Preview (courseBody) was not changed.')
+    print('Applied v6 plus edit-existing-plan feature. Custom Course Preview was not changed.')
 
 if __name__=='__main__':main()
