@@ -34,6 +34,8 @@ jobs:
         env:
           GOLFCOURSEAPI_KEY: ${{ secrets.GOLFCOURSEAPI_KEY }}
         run: python3 scripts/update_golfcourseapi.py
+      - name: Apply seven UI changes (preserve custom Preview)
+        run: python3 scripts/apply_v6.py
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload static website
